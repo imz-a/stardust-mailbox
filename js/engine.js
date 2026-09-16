@@ -7,7 +7,7 @@ const VN = (function () {
   const $ = function (s) { return document.querySelector(s); };
   const KEY = {
     cfg: 'vn_config', seen: 'vn_seen', endings: 'vn_endings', auto: 'vn_auto',
-    slot: function (n) { return 'vn_slot_' + n; }, last: 'vn_last_slot'
+    slot: function (n) { return 'vn_slot_' + n; }, last: 'vn_last_slot', quick: 'vn_quick'
   };
 
   /* ---------------- 配置 ---------------- */
@@ -502,6 +502,21 @@ const VN = (function () {
     closeOverlay();
   }
 
+  function quickSave() {
+    if (!S.started || S.ended) { toast('现在无法快速保存'); return; }
+    save(KEY.quick, snapshot());
+    Audio2.se('select');
+    toast('已快速保存（F9 读取）');
+  }
+
+  function quickLoad() {
+    const d = load(KEY.quick);
+    if (!d) { toast('还没有快速存档'); return; }
+    restore(d);
+    closeOverlay();
+    toast('已读取快速存档');
+  }
+
   function restore(d) {
     S.label = d.label; S.index = d.index;
     S.vars = d.vars || {}; S.chars = d.chars || {};
@@ -633,12 +648,14 @@ const VN = (function () {
 
     if (kind === 'menu') {
       panel.innerHTML = '<h3>菜单</h3>';
-      ['返回游戏', '保存', '读取', '文字回顾', '设置', '回到标题'].forEach(function (t) {
+      ['返回游戏', '快速保存 (F5)', '快速读取 (F9)', '保存', '读取', '文字回顾', '设置', '回到标题'].forEach(function (t) {
         const b = document.createElement('button');
         b.className = 'btn wide'; b.textContent = t;
         b.onclick = function () {
           Audio2.se('click');
           if (t === '返回游戏') closeOverlay();
+          else if (t === '快速保存 (F5)') quickSave();
+          else if (t === '快速读取 (F9)') quickLoad();
           else if (t === '保存') openOverlay('save');
           else if (t === '读取') openOverlay('load');
           else if (t === '文字回顾') openOverlay('history');
@@ -754,6 +771,8 @@ const VN = (function () {
       else if (e.key === 'h' || e.key === 'H') { openOverlay('history'); }
       else if (e.key === 's' || e.key === 'S') { openOverlay('save'); }
       else if (e.key === 'l' || e.key === 'L') { openOverlay('load'); }
+      else if (e.key === 'F5') { e.preventDefault(); quickSave(); }
+      else if (e.key === 'F9') { e.preventDefault(); quickLoad(); }
       else if (e.key === 'Control') { setSkip(true); }
     });
     document.addEventListener('keyup', function (e) {
