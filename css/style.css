@@ -137,9 +137,17 @@ html, body {
 }
 .char.in { opacity: 1; transform: translateY(0); }
 
-.char-slot { position: absolute; bottom: 0; overflow: hidden;
+.char-slot {
+  /* 立绘槽：铺满整个舞台，宽高都必须是舞台尺寸。
+     engine 的 place() 用槽位的 clientWidth/clientHeight 作为「舞台像素尺寸」，
+     再把图片按像素绝对定位在槽内 —— 若槽位宽/高为 0，place() 会直接跳过，
+     立绘就永远不会显示（这就是之前看不到人物的原因）。 */
+  position: absolute; inset: 0;
+  overflow: hidden;
   filter: brightness(1) saturate(1);
-  transition: filter var(--dur-base) var(--ease-out); }
+  transition: filter var(--dur-base) var(--ease-out);
+}
+.char-slot.at-left  { /* 供未来微调留白 */ }
 .char-slot img {
   position: absolute; display: block;
   transform-origin: 0 0;
@@ -150,7 +158,9 @@ html, body {
 
 /* 没有画稿时的剪影占位 */
 .char-slot.missing .silhouette {
-  width: 100%; height: 100%;
+  position: absolute; bottom: 0;
+  width: clamp(200px, 22vh, 300px); height: 62vh;
+  transform: translateX(-50%);
   background: linear-gradient(to bottom, rgba(20,22,40,.85), rgba(10,11,20,.95));
   border-radius: 46% 46% 0 0 / 30% 30% 0 0;
   box-shadow: inset 0 0 60px rgba(255,154,77,.12);
@@ -313,7 +323,7 @@ html, body {
 
 /* ---------------- 覆盖面板 ---------------- */
 #overlay {
-  position: absolute; inset: 0; z-index: 20;
+  position: absolute; inset: 0; z-index: 30;
   display: flex; align-items: center; justify-content: center;
   background: rgba(3, 4, 10, .78);
   backdrop-filter: blur(6px);
@@ -502,19 +512,77 @@ html, body {
 #gallery .panel { width: min(960px, 94%); }
 .gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); gap: var(--sp-3); }
 .gal {
-  padding: var(--sp-4); border-radius: var(--r-md);
+  border-radius: var(--r-md);
   border: 1px solid var(--rule-soft); background: rgba(255, 255, 255, .03);
+  overflow: hidden;
   transition: border-color var(--dur-fast), background var(--dur-fast);
 }
 .gal.star { border-color: rgba(255, 154, 77, .45); background: rgba(255, 154, 77, .07); }
 .gal.locked { opacity: .32; }
+
+/* 结局缩略图：用真实背景 + 天气层还原「结局那一刻」 */
+.gal-shot {
+  position: relative; width: 100%; height: 118px;
+  overflow: hidden; background: var(--bg-deep);
+}
+.gal-shot > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gal-shot .svg-hold svg { width: 100%; height: 100%; }
+.gal-shot .gal-shot-veil {
+  background: linear-gradient(to bottom, rgba(6,7,15,0) 45%, rgba(6,7,15,.78) 100%);
+  z-index: 3;   /* 在背景之上、天气之下 */
+}
+.gal-shot.locked-shot {
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 10px, transparent 10px 20px);
+}
+/* 缩略图里的天气收敛到小尺寸：用容器百分比位移，避免飞出小框 */
+.gal-weather i { animation-duration: 3s !important; }
+.gal-weather.rain i { height: 14px; animation-name: gal-fall; }
+.gal-weather.stars i { animation-duration: 1.6s !important; }
+@keyframes gal-fall { to { transform: translateY(130%); } }
+.gal-weather.sakura i { animation-name: gal-petal; }
+@keyframes gal-petal {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10%  { opacity: .85; }
+  100% { transform: translate(-30px, 130%) rotate(360deg); opacity: 0; }
+}
+
+.gal-body { padding: var(--sp-3) var(--sp-4) var(--sp-4); }
 .gal-tag { font-size: 10px; letter-spacing: .38em; color: var(--accent); }
 .gal-name {
   font-family: var(--font-display);
-  font-size: 19px; margin: 10px 0; letter-spacing: .1em;
+  font-size: 19px; margin: 8px 0; letter-spacing: .1em;
 }
 .gal-desc { font-size: 12px; line-height: 1.85; color: var(--text-muted); }
+.gal-replay { margin-top: var(--sp-3); width: 100%; }
 #gallery-progress { font-size: 11px; letter-spacing: .2em; color: var(--text-hint); margin-bottom: var(--sp-3); }
+
+/* ---------------- 结局回顾面板 ---------------- */
+.recap-panel { max-height: 88vh; overflow-y: auto; }
+.recap-head { margin-bottom: var(--sp-3); }
+.recap-tag { font-size: 10px; letter-spacing: .4em; color: var(--accent); }
+.recap-name {
+  font-family: var(--font-display);
+  font-size: 26px; letter-spacing: .12em; margin: 6px 0;
+}
+.recap-desc { font-size: 13px; line-height: 1.9; color: var(--text-muted); }
+.recap-scene {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  border-radius: var(--r-md); overflow: hidden;
+  border: 1px solid var(--rule-soft); margin-bottom: var(--sp-3);
+}
+.recap-scene > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.recap-scene .svg-hold svg { width: 100%; height: 100%; }
+.recap-lines { margin-bottom: var(--sp-4); }
+.recap-line {
+  font-size: 14px; line-height: 2; padding: 9px 0;
+  border-bottom: 1px solid var(--rule-soft); color: var(--text);
+}
+.recap-line.has-name b {
+  font-family: var(--font-display); font-weight: 500;
+  color: var(--accent); letter-spacing: .1em; margin-right: 6px;
+}
+.recap-line i { color: var(--text-muted); font-style: normal; }
+.recap-empty { font-size: 13px; color: var(--text-hint); }
 
 /* ---------------- Toast ---------------- */
 #toast {

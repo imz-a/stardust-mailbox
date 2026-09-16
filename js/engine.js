@@ -7,7 +7,8 @@ const VN = (function () {
   const $ = function (s) { return document.querySelector(s); };
   const KEY = {
     cfg: 'vn_config', seen: 'vn_seen', endings: 'vn_endings', auto: 'vn_auto',
-    slot: function (n) { return 'vn_slot_' + n; }, last: 'vn_last_slot', quick: 'vn_quick'
+    slot: function (n) { return 'vn_slot_' + n; }, last: 'vn_last_slot', quick: 'vn_quick',
+    recap: function (k) { return 'vn_recap_' + k; }
   };
 
   /* ---------------- 配置 ---------------- */
@@ -63,11 +64,10 @@ const VN = (function () {
 
   /* ------------------------------------------------------------
    * 立绘按「脸部尺寸」自动缩放：
-   * 人脸高度统一占舞台高度的 FACE_H，眼睛落在 FACE_EYE_Y 处。
-   * 想调整人物大小 / 高低，只改这两个数字。
+   * 人脸高度统一占舞台高度的 FACE_H，再按锚点水平对齐、底边贴舞台底。
+   * 想调整人物大小只改 FACE_H；水平位置由 at-left/center/right 决定。
    * ------------------------------------------------------------ */
-  const FACE_H = 0.195;
-  const FACE_EYE_Y = 0.315;
+  const FACE_H = 0.20;    // 脸高占舞台高度的比例（越大人物越大）
 
   /* 同一角色在一幕里出现两个位置时（靠 50% 缩放做不到），走镜像副本 */
   const MIRROR_KEY = 'vn_mirror_';
@@ -81,10 +81,12 @@ const VN = (function () {
       /* 尚无画稿：用剪影占位，保持构图不崩 */
       wrap.className = 'char-slot missing at-' + side;
       wrap.dataset.id = id;
-      wrap.style.width = 'clamp(200px, 22vh, 300px)';
-      wrap.style.height = '62vh';
-      wrap.style.left = (side === 'left' ? '24%' : side === 'right' ? '76%' : '50%');
-      wrap.innerHTML = '<div class="silhouette"></div>';
+      const sil = document.createElement('div');
+      sil.className = 'silhouette';
+      sil.style.width = 'clamp(200px, 22vh, 300px)';
+      sil.style.height = '62vh';
+      sil.style.left = (side === 'left' ? '26%' : side === 'right' ? '74%' : '50%');
+      wrap.appendChild(sil);
       return wrap;
     }
 
@@ -92,19 +94,24 @@ const VN = (function () {
     const faceW = f.right - f.left;
     const faceH = f.bottom - f.top;
 
+    /* 水平锚点：left=0.26 / center=0.5 / right=0.74（舞台宽度比例） */
+    const anchorX = side === 'left' ? 0.26 : side === 'right' ? 0.74 : 0.5;
+
     const win = function (W, H) {
-      const k = (H * FACE_H) / faceH;        // 整张图的缩放系数
-      const iw = W * k, ih = H * k;
-      const fc = { x: (f.left + faceW / 2) * iw, y: (f.top + faceH / 2) * ih };
-      const left = fc.x - W / 2;
-      const top = fc.y - H * FACE_EYE_Y;
+      /* 让「脸部高度」占舞台高度的 FACE_H，水平按锚点对齐，底边贴舞台底。
+         关键：缩放系数必须作用在图片的「原始像素尺寸」上（不能直接乘舞台高度），
+         且立绘以底边贴地的方式摆放 —— 这样半身像自然站在画面下缘，不会悬空。 */
+      const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
+      const k = (H * FACE_H) / (nh * faceH);   // 相对原始图片的缩放比例
+      const iw = nw * k, ih = nh * k;
+      const fc = { x: (f.left + faceW / 2) * iw };   // 脸心在图片内的横向位置
+      const left = W * anchorX - fc.x;               // 脸心对齐水平锚点
+      const top = H - ih;                            // 底边贴舞台底
       return { k: k, w: iw, h: ih, l: left, t: top };
     };
 
     wrap.className = 'char-slot at-' + side;
     wrap.dataset.id = id;
-    wrap.style.height = '100%';
-    wrap.style.left = (side === 'left' ? '24%' : side === 'right' ? '76%' : '50%');
 
     const img = document.createElement('img');
     img.alt = ART.CHAR_NAME[id] || '';
@@ -456,6 +463,21 @@ const VN = (function () {
     save(KEY.endings, unlocked);
     save(KEY.seen, S.seen);
 
+    /* 记录这个结局的「回放快照」：结局场景的背景 / 天气 / 全部文本。
+       结局画廊用它还原结局画面与文字，方便随时回顾。 */
+    try {
+      save(KEY.recap(key), {
+        bg: S.bg || 'starfield',
+        weather: S.weather || 'stars',
+        lines: (STORY.scenes[S.label] || [])
+          .filter(function (it) { return it.t || it.say; })
+          .map(function (it) {
+            return { name: it.say || '', text: it.t || it.text || '' };
+          }),
+        date: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit' })
+      });
+    } catch (err) {}
+
     setBg('starfield');
     setWeather('stars');
     S.chars = {}; renderChars();
@@ -723,17 +745,102 @@ const VN = (function () {
     Object.keys(STORY.endings).forEach(function (k) {
       const e = STORY.endings[k];
       const got = !!unlocked[k];
+      const recap = got ? load(KEY.recap(k)) : null;
       const cell = document.createElement('div');
       cell.className = 'gal' + (got ? '' : ' locked') + (e.star ? ' star' : '');
-      cell.innerHTML = got
-        ? '<div class="gal-tag">' + e.tag + '</div><div class="gal-name">「' + e.name + '」</div><div class="gal-desc">' + e.desc + '</div>'
-        : '<div class="gal-tag">？ ？ ？</div><div class="gal-name">— 未解锁 —</div><div class="gal-desc">抵达这个结局后，这里会亮起来。</div>';
+
+      if (got) {
+        /* 已解锁：显示结局画面缩略图 + 文字 + 回顾按钮 */
+        cell.innerHTML =
+          '<div class="gal-shot"></div>' +
+          '<div class="gal-body">' +
+            '<div class="gal-tag">' + e.tag + '</div>' +
+            '<div class="gal-name">「' + e.name + '」</div>' +
+            '<div class="gal-desc">' + e.desc + '</div>' +
+            '<button class="btn gal-replay" type="button">回顾这段结局</button>' +
+          '</div>';
+        /* 用真实背景图 + 天气层拼出「结局截图」质感 */
+        const shot = cell.querySelector('.gal-shot');
+        shot.appendChild(ART.bgNode((recap && recap.bg) || 'starfield'));
+        if (recap && recap.weather) {
+          const w = document.createElement('div');
+          w.className = 'weather gal-weather ' + recap.weather;
+          for (let i = 0; i < 18; i++) w.appendChild(document.createElement('i'));
+          shot.appendChild(w);
+        }
+        const veil = document.createElement('div');
+        veil.className = 'gal-shot-veil';
+        shot.appendChild(veil);
+
+        cell.querySelector('.gal-replay').onclick = function (ev) {
+          ev.stopPropagation();
+          Audio2.se('click');
+          openRecap(k, e, recap);
+        };
+      } else {
+        cell.innerHTML =
+          '<div class="gal-shot locked-shot"></div>' +
+          '<div class="gal-body">' +
+            '<div class="gal-tag">？ ？ ？</div>' +
+            '<div class="gal-name">— 未解锁 —</div>' +
+            '<div class="gal-desc">抵达这个结局后，这里会亮起来。</div>' +
+          '</div>';
+      }
       g.appendChild(cell);
     });
     const n = Object.keys(unlocked).length;
     const total = Object.keys(STORY.endings).length;
     const p = $('#gallery-progress');
     if (p) p.textContent = '已解锁 ' + n + ' / ' + total + ' 个结局';
+  }
+
+  /* ---------------- 结局回顾 ---------------- */
+  function openRecap(k, e, recap) {
+    const ov = $('#overlay');
+    ov.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'panel recap-panel';
+
+    const lines = (recap && recap.lines) || [];
+    let html =
+      '<div class="recap-head">' +
+        '<div class="recap-tag">' + (e.tag || '') + '</div>' +
+        '<h3 class="recap-name">「' + e.name + '」</h3>' +
+        '<div class="recap-desc">' + (e.desc || '') + '</div>' +
+      '</div>' +
+      '<div class="recap-scene" id="recap-scene"></div>' +
+      '<div class="recap-lines" id="recap-lines"></div>' +
+      '<button class="btn" id="recap-close">关闭</button>';
+    panel.innerHTML = html;
+    ov.appendChild(panel);
+    ov.classList.add('show');
+
+    /* 结局画面：与当时一致的背景 + 天气 */
+    const scene = panel.querySelector('#recap-scene');
+    scene.appendChild(ART.bgNode((recap && recap.bg) || 'starfield'));
+    if (recap && recap.weather) {
+      const w = document.createElement('div');
+      w.className = 'weather ' + recap.weather;
+      for (let i = 0; i < 26; i++) w.appendChild(document.createElement('i'));
+      scene.appendChild(w);
+    }
+
+    /* 结局文本：逐行呈现，带说话人 */
+    const box = panel.querySelector('#recap-lines');
+    if (!lines.length) {
+      box.innerHTML = '<p class="recap-empty">还没有这段结局的回顾记录。重新抵达一次即可生成。</p>';
+    } else {
+      lines.forEach(function (it) {
+        const p = document.createElement('p');
+        p.className = 'recap-line' + (it.name ? ' has-name' : '');
+        p.innerHTML = it.name
+          ? '<b>' + it.name + '</b>' + it.text
+          : '<i>' + it.text + '</i>';
+        box.appendChild(p);
+      });
+    }
+
+    panel.querySelector('#recap-close').onclick = closeOverlay;
   }
 
   /* ============================================================
