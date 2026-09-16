@@ -1,0 +1,18 @@
+# ---- 临时 / 调试文件 ----
+_ls.txt
+_o.txt
+_out.txt
+*.tmp
+*tmp_grid*
+~$*
+
+# ---- 系统与编辑器 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# ---- WorkBuddy 工作区元数据（本地专用，不入库）----
+.workbuddy/

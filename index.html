@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>星屑信箱 · Stardust Mailbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <div class="stage">
+    <h1 class="sr-only">星屑信箱 —— 一部关于等待的多结局视觉小说</h1>
+
+    <!-- ================= 标题画面 ================= -->
+    <section id="screen-title" class="screen active">
+      <div id="title-bg"></div>
+      <div class="atmos"></div>
+      <div id="title-inner">
+        <div id="title-sub">STARDUST MAILBOX</div>
+        <h1 id="title-name">星屑信箱</h1>
+        <div id="title-author"></div>
+        <nav id="title-menu">
+          <button id="btn-start">开始游戏</button>
+          <button id="btn-continue">继续游戏</button>
+          <button id="btn-load">读取进度</button>
+          <button id="btn-gallery">结局画廊</button>
+          <button id="btn-config">设置</button>
+        </nav>
+      </div>
+      <div id="title-tip">点击 / 空格 推进 · A 自动 · H 文字回顾 · Ctrl 快进 · Esc 菜单</div>
+
+      <div id="gallery">
+        <div class="panel">
+          <h3>结局画廊</h3>
+          <div id="gallery-progress"></div>
+          <div class="gal-grid" id="gallery-grid"></div>
+          <button class="btn" id="gallery-close">关闭</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 游戏画面 ================= -->
+    <section id="screen-game" class="screen">
+      <div id="bg-a" class="bg-layer"></div>
+      <div id="bg-b" class="bg-layer"></div>
+      <div class="atmos"></div>
+      <div id="weather" class="weather"></div>
+      <div id="char-layer"></div>
+      <div id="click-area"></div>
+
+      <div id="dialogue">
+        <div id="name-box" class="hidden"></div>
+        <div id="text-box" class="text-box"></div>
+        <div id="next-hint">▼</div>
+      </div>
+
+      <div id="quick">
+        <button id="btn-save" title="保存 (S)">存</button>
+        <button id="btn-loadq" title="读取 (L)">读</button>
+        <button id="btn-auto" title="自动播放 (A)">A</button>
+        <button id="btn-skip" title="快进 (按住 Ctrl)">»</button>
+        <button id="btn-hist" title="文字回顾 (H)">H</button>
+        <button id="btn-cfgq" title="设置">设</button>
+        <button id="btn-menu" title="菜单 (Esc)">≡</button>
+      </div>
+
+      <div id="choice"></div>
+      <div id="card"></div>
+      <div id="fx-flash"></div>
+
+      <div id="ending-card">
+        <div class="ec-tag"></div>
+        <div class="ec-name"></div>
+        <div class="ec-desc"></div>
+        <button class="btn" id="ending-back">回到标题</button>
+      </div>
+    </section>
+
+    <div id="overlay"></div>
+    <div id="toast"></div>
+  </div>
+</div>
+
+<script src="js/art.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/story.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>
