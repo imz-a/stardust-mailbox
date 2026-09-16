@@ -9,6 +9,11 @@
 const fs = require('fs'), path = require('path'), vm = require('vm');
 
 const ROOT = __dirname;
+const REPORT = path.join(ROOT, '_report.txt');
+const outLines = [];
+const O = function (s) { outLines.push(String(s)); console.log(s); };
+const OO = console.log;  // keep a ref for raw usage
+console.log = function (s) { outLines.push(String(s)); };
 const ctx = {
   console,
   window: {},
@@ -104,3 +109,5 @@ console.log('\n场景 ' + labels.length + ' 个 / 对白旁白 ' + lines + ' 句
 console.log('引用背景 ' + bgUsed.size + ' 张（已有画稿 ' + Object.keys(ART.PHOTO.bg).length + ' 张）');
 console.log('出场角色 ' + charUsed.size + ' 位（已有立绘 ' + Object.keys(ART.PHOTO.char).join('、') + '）');
 console.log(err ? '\n发现 ' + err + ' 个问题' : '\n全部检查通过');
+
+fs.writeFileSync(REPORT, outLines.join('\n'), 'utf8');

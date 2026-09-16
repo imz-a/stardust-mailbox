@@ -20,24 +20,35 @@ const ART = (function () {
       starfield:       A + 'bg/starfield.png',
       classroom_rain:  A + 'bg/classroom_rain.png',
       rooftop_night:   A + 'bg/rooftop_night.png',
-      gate_morning:    A + 'bg/gate_morning.png'
+      gate_morning:    A + 'bg/gate_morning.png',
+      /* 第二幕新增 */
+      archive_room:      A + 'bg/archive_room.png',
+      observatory_night: A + 'bg/observatory_night.png',
+      rooftop_dawn:      A + 'bg/rooftop_dawn.png',
+      mailbox_corner:    A + 'bg/mailbox_corner.png',
+      library_dusk:      A + 'bg/library_dusk.png',
+      lawn_summer:       A + 'bg/lawn_summer.png'
     },
     /* 角色立绘：透明背景 PNG */
     char: {
       chenyu: {
         normal:   A + 'ch/chenyu_normal.png',
         surprise: A + 'ch/chenyu_surprise.png',
-        sad:      A + 'ch/chenyu_sad.png'
+        sad:      A + 'ch/chenyu_sad.png',
+        smile:    A + 'ch/chenyu_smile.png',
+        angry:    A + 'ch/chenyu_angry.png'
       },
       hoshi: {
         normal:   A + 'ch/hoshi_normal.png',
         surprise: A + 'ch/hoshi_surprise.png',
         sad:      A + 'ch/hoshi_sad.png',
-        smile:    A + 'ch/hoshi_smile.png'
+        smile:    A + 'ch/hoshi_smile.png',
+        cry:      A + 'ch/hoshi_cry.png'
       },
       suhe: {
         normal:   A + 'ch/suhe_normal.png',
-        smile:    A + 'ch/suhe_smile.png'
+        smile:    A + 'ch/suhe_smile.png',
+        sad:      A + 'ch/suhe_sad.png'
       }
     }
   };
@@ -149,12 +160,19 @@ const ART = (function () {
     'assets/ch/chenyu_normal.png':   { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
     'assets/ch/chenyu_surprise.png': { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
     'assets/ch/chenyu_sad.png':      { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
+    /* smile / angry 与原表情同一构图，复用同一套脸部框，避免切换时人物大小跳变 */
+    'assets/ch/chenyu_smile.png':    { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
+    'assets/ch/chenyu_angry.png':    { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
     'assets/ch/hoshi_normal.png':    { left: 0.103, right: 0.881, top: 0.059, bottom: 0.359 },
     'assets/ch/hoshi_sad.png':       { left: 0.103, right: 0.855, top: 0.059, bottom: 0.359 },
     'assets/ch/hoshi_surprise.png':  { left: 0.103, right: 0.877, top: 0.059, bottom: 0.359 },
     'assets/ch/hoshi_smile.png':     { left: 0.322, right: 0.705, top: 0.068, bottom: 0.368 },
     'assets/ch/suhe_normal.png':     { left: 0.153, right: 0.853, top: 0.043, bottom: 0.343 },
-    'assets/ch/suhe_smile.png':      { left: 0.175, right: 0.807, top: 0.000, bottom: 0.299 }
+    'assets/ch/suhe_smile.png':      { left: 0.175, right: 0.807, top: 0.000, bottom: 0.299 },
+    /* 同一构图，复用 suhe_normal 的框 */
+    'assets/ch/suhe_sad.png':        { left: 0.153, right: 0.853, top: 0.043, bottom: 0.343 },
+    /* 同一构图，复用 hoshi_normal 的框 */
+    'assets/ch/hoshi_cry.png':       { left: 0.103, right: 0.881, top: 0.059, bottom: 0.359 }
   };
 
   const CHAR_NAME = { chenyu: '陈屿', suhe: '苏禾', hoshi: '？？？' };
