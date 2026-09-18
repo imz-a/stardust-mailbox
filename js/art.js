@@ -175,7 +175,7 @@ const ART = (function () {
     'assets/ch/hoshi_cry.png':       { left: 0.103, right: 0.881, top: 0.059, bottom: 0.359 }
   };
 
-  const CHAR_NAME = { chenyu: '陈屿', suhe: '苏禾', hoshi: '？？？' };
+  const CHAR_NAME = { chenyu: '陈屿', suhe: '苏禾', hoshi: '星屑' };
 
   return {
     PHOTO: PHOTO, BG: BG, FACE: FACE, CHAR_NAME: CHAR_NAME,
