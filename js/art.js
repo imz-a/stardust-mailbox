@@ -48,7 +48,9 @@ const ART = (function () {
       suhe: {
         normal:   A + 'ch/suhe_normal.png',
         smile:    A + 'ch/suhe_smile.png',
-        sad:      A + 'ch/suhe_sad.png'
+        sad:      A + 'ch/suhe_sad.png',
+        blush:    A + 'ch/suhe_blush.png',
+        surprise: A + 'ch/suhe_surprise.png'
       }
     }
   };
@@ -155,25 +157,39 @@ const ART = (function () {
     return img;
   }
 
-  /* 画稿里脸部的外接框（归一化坐标），用于自动裁切成半身立绘 */
-  const FACE = {
-    'assets/ch/chenyu_normal.png':   { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
-    'assets/ch/chenyu_surprise.png': { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
-    'assets/ch/chenyu_sad.png':      { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
-    /* smile / angry 与原表情同一构图，复用同一套脸部框，避免切换时人物大小跳变 */
-    'assets/ch/chenyu_smile.png':    { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
-    'assets/ch/chenyu_angry.png':    { left: 0.187, right: 0.813, top: 0.030, bottom: 0.412 },
-    'assets/ch/hoshi_normal.png':    { left: 0.103, right: 0.881, top: 0.059, bottom: 0.359 },
-    'assets/ch/hoshi_sad.png':       { left: 0.103, right: 0.855, top: 0.059, bottom: 0.359 },
-    'assets/ch/hoshi_surprise.png':  { left: 0.103, right: 0.877, top: 0.059, bottom: 0.359 },
-    'assets/ch/hoshi_smile.png':     { left: 0.322, right: 0.705, top: 0.068, bottom: 0.368 },
-    'assets/ch/suhe_normal.png':     { left: 0.153, right: 0.853, top: 0.043, bottom: 0.343 },
-    'assets/ch/suhe_smile.png':      { left: 0.175, right: 0.807, top: 0.000, bottom: 0.299 },
-    /* 同一构图，复用 suhe_normal 的框 */
-    'assets/ch/suhe_sad.png':        { left: 0.153, right: 0.853, top: 0.043, bottom: 0.343 },
-    /* 同一构图，复用 hoshi_normal 的框 */
-    'assets/ch/hoshi_cry.png':       { left: 0.103, right: 0.881, top: 0.059, bottom: 0.359 }
+  /* 画稿里脸部的外接框（归一化坐标），用于自动裁切成半身立绘。
+   *
+   * 关键约束：同一角色的每个表情都必须共用同一个框，否则切换表情时人物
+   * 大小会跳变。
+   *
+   * 引擎只用 faceH(bottom - top) 决定缩放、用左右中点决定水平对齐，
+   * 所以「脸看起来一样大」的条件是：**框内框住的是同一段解剖结构**。
+   * 只让 faceH 相等是不够的 —— 星屑的立绘被裁过，发顶在图中的位置比
+   * 陈屿 / 苏禾低得多，用同一个 top 就会把她的框压在额头上，框内少了一截
+   * 头顶，于是她被缩得比谁都大。所以每个角色各给一条，top 一律取该组
+   * 立绘实测的「发顶」，高度统一 0.20。
+   *
+   * 换新立绘时：量出该组图的发顶位置（第一个不透明像素行 / 图高），
+   * 填进对应角色的 top；bottom = top + 0.20。 */
+  const FACE_BOX = {
+    /* 每个角色的框都取「发顶 → 下巴」，且 top 必须贴合该角色实际的发顶行，
+       否则同一张图会被算成不同脸高，切表情时人物大小会跳。
+       框高（bottom-top）并不等于脸高占舞台的比例，引擎用 FACE_H 统一指定。
+       星屑单独一条：她的立绘画布是 1024x1158，发顶在 0.0484，
+       这样她的「身体:头」比例才和另两人一致（同高度下头不会偏大）。 */
+    chenyu: { left: 0.35, right: 0.65, top: 0.017, bottom: 0.217 },
+    suhe:   { left: 0.35, right: 0.65, top: 0.014, bottom: 0.214 },
+    hoshi:  { left: 0.35, right: 0.65, top: 0.0484, bottom: 0.2422 }
   };
+
+  const FACE = {};
+  Object.keys(PHOTO.char).forEach(function (id) {
+    const box = FACE_BOX[id];
+    if (!box) return;
+    Object.keys(PHOTO.char[id]).forEach(function (pose) {
+      FACE[PHOTO.char[id][pose]] = box;
+    });
+  });
 
   const CHAR_NAME = { chenyu: '陈屿', suhe: '苏禾', hoshi: '星屑' };
 

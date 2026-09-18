@@ -26,7 +26,12 @@ const VN = (function () {
     document.body.classList.toggle('reduce-motion', !!CONFIG.reduceMotion);
   }
 
-  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  /* localStorage 写失败必须让上层知道：配额满时 setItem 会抛 QuotaExceededError，
+     以前这里直接吞掉，导致「点了保存但什么都没存」且玩家毫无察觉。 */
+  function save(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+    catch (e) { return false; }
+  }
   function load(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 
   /* ---------------- 运行时状态 ---------------- */
@@ -67,15 +72,14 @@ const VN = (function () {
    * 人脸高度统一占舞台高度的 FACE_H，再按锚点水平对齐、底边贴舞台底。
    * 想调整人物大小只改 FACE_H；水平位置由 at-left/center/right 决定。
    * ------------------------------------------------------------ */
-  const FACE_H = 0.20;    // 脸高占舞台高度的比例（越大人物越大）
-
-  /* 同一角色在一幕里出现两个位置时（靠 50% 缩放做不到），走镜像副本 */
-  const MIRROR_KEY = 'vn_mirror_';
+  /* 脸高占舞台高度的比例（越大人物越大）。
+     与 art.js 的 FACE 框配套：框高统一 0.20（= 发顶到下巴），
+     所以立绘显示高度 = 舞台高 × FACE_H / 0.20 ≈ 0.68 舞台高。 */
+  const FACE_H = 0.135;
 
   function buildChar(id, pose, side) {
     const wrap = document.createElement('div');
     const src = ART.charSource(id, pose);
-    const key = MIRROR_KEY + id + '_' + side;
 
     if (!src) {
       /* 尚无画稿：用剪影占位，保持构图不崩 */
@@ -105,8 +109,12 @@ const VN = (function () {
       const k = (H * FACE_H) / (nh * faceH);   // 相对原始图片的缩放比例
       const iw = nw * k, ih = nh * k;
       const fc = { x: (f.left + faceW / 2) * iw };   // 脸心在图片内的横向位置
-      const left = W * anchorX - fc.x;               // 脸心对齐水平锚点
-      const top = H - ih;                            // 底边贴舞台底
+      /* 立绘以 scaleX(-1) 翻转朝内，而 transform-origin 是图片左上角，
+         于是图片实际渲染在 [left - iw, left] 这一段里，脸心落在 left - fc.x。
+         要把它摆到锚点上必须写成 + fc.x —— 写成 - fc.x 会让整张图左移 2*fc.x，
+         人物被挤出画面（这是「立绘不在应该在的位置」的元凶）。 */
+      const left = W * anchorX + fc.x;                // 翻转后脸心对齐水平锚点
+      const top = H - ih;                             // 底边贴舞台底
       return { k: k, w: iw, h: ih, l: left, t: top };
     };
 
@@ -135,24 +143,12 @@ const VN = (function () {
     if (window.ResizeObserver) new ResizeObserver(place).observe(wrap);
     else window.addEventListener('resize', place);
 
-    /* 生成 PNG 副本，供镜像 / 放大使用 */
-    if (img.complete && img.naturalWidth) {
-      try { localStorage.setItem(key, makeMirror(img)); } catch (e) {}
-    } else {
-      img.addEventListener('load', function () {
-        try { localStorage.setItem(key, makeMirror(img)); } catch (e) {}
-      });
-    }
+    /* 注意：这里曾经把立绘的镜像 PNG 以 dataURL 存进 localStorage「备用」，
+       但全项目没有任何地方读取它。一张 1024x1428 立绘的 dataURL 约 1.7MB，
+       存满 3 张就把 5MB 的 localStorage 配额吃干净了 —— 后果是之后所有
+       存档/读档/自动存档的 setItem 全部静默抛 QuotaExceededError 并被吞掉，
+       玩家表现为「存档没反应」。镜像直接用 CSS 的 scaleX(-1) 实现即可，不需要副本。 */
     return wrap;
-  }
-
-  function makeMirror(img) {
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth; c.height = img.naturalHeight;
-    const x = c.getContext('2d');
-    x.translate(c.width, 0); x.scale(-1, 1);
-    x.drawImage(img, 0, 0);
-    return c.toDataURL('image/png');
   }
 
   function setWeather(kind) {
@@ -217,7 +213,9 @@ const VN = (function () {
   function showChar(id, pose, at) {
     const prev = S.chars[id];
     if (prev && prev.at === (at || 'center') && prev.pose === (pose || 'normal')) return;
-    if (!prev && Object.keys(S.chars).length >= 2) {
+    /* 同屏上限 3 人（左 / 中 / 右），这是 VN 演出的通行做法。
+       超过 3 人时挤掉最早登场的那位，避免立绘堆叠糊成一片。 */
+    if (!prev && Object.keys(S.chars).length >= 3) {
       const oldest = Object.keys(S.chars)[0];
       delete S.chars[oldest];
     }
@@ -510,7 +508,8 @@ const VN = (function () {
   function saveAuto() { if (S.started && !S.ended) save(KEY.auto, snapshot()); }
 
   function doSave(n) {
-    save(KEY.slot(n), snapshot());
+    const ok = save(KEY.slot(n), snapshot());
+    if (!ok) { Audio2.se('select'); toast('保存失败：浏览器存储空间已满'); return; }
     save(KEY.last, n);
     Audio2.se('select');
     renderSlots('#tmp-grid', true);
@@ -526,9 +525,9 @@ const VN = (function () {
 
   function quickSave() {
     if (!S.started || S.ended) { toast('现在无法快速保存'); return; }
-    save(KEY.quick, snapshot());
+    const ok = save(KEY.quick, snapshot());
     Audio2.se('select');
-    toast('已快速保存（F9 读取）');
+    toast(ok ? '已快速保存（F9 读取）' : '快速保存失败：浏览器存储空间已满');
   }
 
   function quickLoad() {

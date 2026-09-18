@@ -1,12 +1,12 @@
-# ---- 涓存椂 / 璋冭瘯鏂囦欢 ----
-_ls.txt
+# ---- 临时 / 调试文件 ----
+_*.txt
 _o.txt
 _out.txt
 *.tmp
 *tmp_grid*
 ~$*
 
-# ---- 绯荤粺涓庣紪杈戝櫒 ----
+# ---- 系统与编辑器 ----
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -14,8 +14,5 @@ desktop.ini
 .idea/
 *.swp
 
-# ---- WorkBuddy 宸ヤ綔鍖哄厓鏁版嵁锛堟湰鍦颁笓鐢紝涓嶅叆搴擄級----
+# ---- WorkBuddy 工作区元数据（本地专用，不入库）----
 .workbuddy/
-# 校验脚本产物
-_report.txt
-_graph.txt
