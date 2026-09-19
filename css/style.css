@@ -196,7 +196,7 @@ html, body {
   background: var(--accent);
   border-radius: var(--r-sm);
   box-shadow: 0 4px 16px rgba(255, 154, 77, .35);
-  transition: opacity var(--dur-base) var(--ease-out);
+  transition: opacity var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out);
 }
 #name-box.hidden { opacity: 0; }
 

@@ -340,6 +340,10 @@ const VN = (function () {
     }
     $('#name-box').textContent = name || '';
     $('#name-box').classList.toggle('hidden', !name);
+    /* 名字框角色色：名字颜色 ↔ 立绘主色呼应（林砚无配置 → 默认主题橙） */
+    const nameBox = $('#name-box');
+    if (ART.NAME_COLOR && ART.NAME_COLOR[name]) nameBox.style.background = ART.NAME_COLOR[name];
+    else nameBox.style.background = '';
     highlightSpeaker(name);
     const box = $('#text-box');
     box.className = 'text-box' + (style ? ' st-' + style : '');

@@ -55,6 +55,14 @@ const ART = (function () {
     }
   };
 
+  /* 名字框专属色：让名字颜色与立绘主色呼应，一眼对上「名字 ↔ 人物」。
+     林砚（主角，无立绘）不配置 → 落回默认主题橙，「橙色名字 = 我」。 */
+  const NAME_COLOR = {
+    '陈屿': '#e2a55f',
+    '苏禾': '#9db4de',
+    '星屑': '#eee7cf'
+  };
+
   /* ============================ 程序化画面 ============================ */
   function rng(seed) {
     let s = seed >>> 0 || 1;
@@ -194,7 +202,7 @@ const ART = (function () {
   const CHAR_NAME = { chenyu: '陈屿', suhe: '苏禾', hoshi: '星屑' };
 
   return {
-    PHOTO: PHOTO, BG: BG, FACE: FACE, CHAR_NAME: CHAR_NAME,
+    PHOTO: PHOTO, BG: BG, FACE: FACE, CHAR_NAME: CHAR_NAME, NAME_COLOR: NAME_COLOR,
     bgNode: bgNode, charNode: charNode, charSource: charSource, bgSource: bgSource
   };
 })();
